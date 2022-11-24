@@ -7,6 +7,7 @@ from keylime import api_version as keylime_api_version
 from keylime import keylime_logging
 from keylime.ip_util import bracketize_ipv6
 from keylime.requests_client import RequestsClient
+from keylime.tpm import amd_vtpm
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
