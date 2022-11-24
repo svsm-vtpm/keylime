@@ -4,6 +4,7 @@ import sys
 from keylime import api_version as keylime_api_version
 from keylime import crypto, json, keylime_logging
 from keylime.requests_client import RequestsClient
+from keylime.tpm import amd_vtpm
 
 logger = keylime_logging.init_logging("registrar_client")
 api_version = keylime_api_version.current_version()
@@ -93,7 +94,7 @@ def doRegisterAgent(
         "ekcert": ekcert,
         "aik_tpm": aik_tpm,
     }
-    if ekcert is None or ekcert == "emulator":
+    if ekcert is None or ekcert == "emulator" or amd_vtpm.is_amd_vtpm(base64.b64decode(ekcert)):
         data["ek_tpm"] = ek_tpm
 
     if mtls_cert is not None:

@@ -19,6 +19,7 @@ from keylime.da import record
 from keylime.db.keylime_db import DBEngineManager, SessionManager
 from keylime.db.registrar_db import RegistrarMain
 from keylime.tpm import tpm2_objects
+from keylime.tpm import amd_vtpm
 from keylime.tpm.tpm_main import tpm
 
 logger = keylime_logging.init_logging("registrar")
@@ -259,9 +260,16 @@ class UnprotectedHandler(BaseHTTPRequestHandler, SessionManager):
 
             initialize_tpm = tpm()
 
-            if ekcert is None or ekcert == "emulator":
-                logger.warning("Agent %s did not submit an ekcert", agent_id)
-                ek_tpm = json_body["ek_tpm"]
+            if ekcert is None or ekcert == 'emulator':
+                logger.warning('Agent %s did not submit an ekcert' % agent_id)
+                ek_tpm = json_body['ek_tpm']
+            elif amd_vtpm.is_amd_vtpm(base64.b64decode(ekcert)):
+                logger.info('Agent %s is using an amd vTPM' % agent_id)
+                if amd_vtpm.is_amd_vtpm_ek_valid(base64.b64decode(json_body['ek_tpm']), base64.b64decode(ekcert)):
+                    ek_tpm = json_body['ek_tpm']
+                else:
+                    logger.error('Agent does not have a valid EKpub digest')
+                    return
             else:
                 if "ek_tpm" in json_body:
                     # This would mean the agent submitted both a non-None ekcert, *and*

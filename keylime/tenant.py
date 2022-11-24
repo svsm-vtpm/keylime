@@ -21,6 +21,7 @@ from keylime.cmd import user_data_encrypt
 from keylime.common import algorithms, retry, states, validators
 from keylime.requests_client import RequestsClient
 from keylime.tpm import tpm2_objects
+from keylime.tpm import amd_vtpm
 from keylime.tpm.tpm_abstract import TPM_Utilities
 from keylime.tpm.tpm_main import tpm
 
@@ -430,6 +431,11 @@ class Tenant:
             elif ekcert is None:
                 logger.warning("No EK cert provided, require_ek_cert option in config set to True")
                 return False
+            elif amd_vtpm.is_amd_vtpm(base64.b64decode(ekcert)):
+                if not amd_vtpm.verify_ekcert_surrogate(base64.b64decode(ekcert)):
+                    logger.warning("Invalid attestation report in amd vTPM")
+                    return False
+                return True
             elif not self.tpm_instance.verify_ek(base64.b64decode(ekcert), config.get("tenant", "tpm_cert_store")):
                 logger.warning("Invalid EK certificate")
                 return False
@@ -492,7 +498,7 @@ class Tenant:
 
         # check all EKs with optional script:
         script = config.get("tenant", "ek_check_script")
-        if not script:
+        if not script or amd_vtpm.is_amd_vtpm(base64.b64decode(self.registrar_data["ekcert"])):
             return True
 
         if script[0] != "/":
