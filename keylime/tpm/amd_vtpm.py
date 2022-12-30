@@ -81,12 +81,3 @@ def verify_ekcert_surrogate(EKcert_surrogate, mb_refstate: dict):
 
     logger.info("Successfully verified amd vTPM attestation report")
     return True
-
-
-# check actual SEV launch measurement against the measured boot refstate
-def verify_launch_measurement(EKcert_surrogate, mb_refstate: dict):
-
-    # unpack actual launch measurement from attestation report
-    alm=struct.unpack('<48s', EKcert_surrogate[0x90:0xC0])[0]
-    alms = "0x" + alm.hex()
-
