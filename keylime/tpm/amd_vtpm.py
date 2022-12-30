@@ -43,19 +43,23 @@ def is_amd_vtpm(EKcert_surrogate):
     vmpl=struct.unpack('<I', EKcert_surrogate[0x30:0x34])[0]
     return (vmpl == 0) and (version == 2) and (len(EKcert_surrogate) == 1184)
 
-def verify_ekcert_surrogate(EKcert_surrogate):
+def verify_ekcert_surrogate(EKcert_surrogate, mb_refstate: dict):
     vmpl=struct.unpack('<I', EKcert_surrogate[0x30:0x34])[0]
     if (vmpl > 0):
         logger.error("Using an attestation report from VMPL %d"%vmpl)
         return False
 
-    # TODO: to ask: where do we store/get allowed measures? Is the format ok?
-    #measurement=struct.unpack('<48s', EKcert_surrogate[0x90:0xC0])[0].hex()
-    #fp = open('allowed_measures.json', 'rb')
-    #jdata = json.load(fp)
-    #if not(measurement_allowed(measurement, jdata)):
-    #    return False
-
+    # load SEV launch measurement, compare with measured boot refstate (if there is one)
+    alm="0x" + struct.unpack('<48s', EKcert_surrogate[0x90:0xC0])[0].hex()
+    logger.info("actual launch measurement=%s"%(alm))
+    if not (mb_refstate and 'launch_measurements' in mb_refstate):
+        logger.info("SEV launch measurement ignored because mb_refstate does not have launch measurements")
+    elif alm in mb_refstate['launch_measurements']:
+        logger.info("SEV launch measurement found in measured boot refstate")
+    else:
+        logger.error("SEV launch measurement does not match any provided in the measured boot refstate")
+        return False
+    
     sigRS=struct.unpack('<72s72s368x', EKcert_surrogate[0x2A0:0x4A0])
     R=int.from_bytes(sigRS[0], 'little')
     S=int.from_bytes(sigRS[1], 'little')

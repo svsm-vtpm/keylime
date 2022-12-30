@@ -432,7 +432,7 @@ class Tenant:
                 logger.warning("No EK cert provided, require_ek_cert option in config set to True")
                 return False
             elif amd_vtpm.is_amd_vtpm(base64.b64decode(ekcert)):
-                if not amd_vtpm.verify_ekcert_surrogate(base64.b64decode(ekcert)):
+                if not amd_vtpm.verify_ekcert_surrogate(base64.b64decode(ekcert), self.mb_refstate):
                     logger.warning("Invalid attestation report in amd vTPM")
                     return False
                 return True
